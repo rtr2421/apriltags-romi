@@ -22,6 +22,10 @@ public class Camera extends SubsystemBase {
         camera.setPipelineIndex(0);
     }
 
+    /** Returns the underlying photoncamera */
+    public PhotonCamera getPhotonCamera() {
+        return camera;
+    }
     /**
      * Does the camera see any targets?
      * @return if the camera sees targets

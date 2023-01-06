@@ -5,14 +5,21 @@
 package frc.robot.sensors;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import org.photonvision.PhotonCamera;
+import org.photonvision.RobotPoseEstimator;
+import org.photonvision.RobotPoseEstimator.PoseStrategy;
+
 import edu.wpi.first.math.ComputerVisionUtil;
+import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
@@ -24,13 +31,16 @@ import frc.robot.RobotConstants;
 /** Add your docs here. */
 public class Odometry {
 
+    RobotPoseEstimator robotPoseEstimator;
+
     public DifferentialDrivePoseEstimator poseEstimator;
     public Pose2d pose;
     public final Field2d field = new Field2d();
     public double lastVisionTimestamp = 0;
 
-    public Odometry() {
+    public Odometry(PhotonCamera camera) {
 
+        robotPoseEstimator = new RobotPoseEstimator(FieldConstants.layout, PoseStrategy.AVERAGE_BEST_TARGETS, List.of(Pair.of(camera, RobotConstants.RobotToCamera)));
         poseEstimator = new DifferentialDrivePoseEstimator(
                 DriveConstants.kDriveKinematics,
                 new Rotation2d(),
@@ -78,22 +88,18 @@ public class Odometry {
      * @param Camera - a Camera object that can return targets
      */
     public void updatePoseEstimateFromCamera(Camera camera) {
+        // Only update if there's been an update since we last checked
         var last = camera.getLastMeasurementTimestamp();
         if (last <= lastVisionTimestamp) {
             return; // nothing new for us
         }
-        lastVisionTimestamp = camera.getLastMeasurementTimestamp();
-        var results = camera.getTargets();
-        results.forEach(target -> {
-            var id = target.getFiducialId();
-            var foundTag = FieldConstants.tags.get(id);
-            if (foundTag != null) {
-                var transform = target.getBestCameraToTarget();
-                var mypose = ComputerVisionUtil.objectToRobotPose(foundTag.pose, transform,
-                        RobotConstants.RobotToCamera);
-                 poseEstimator.addVisionMeasurement(mypose.toPose2d(),
-                 Timer.getFPGATimestamp() - camera.getLastPipelineLatency());
-            }
+        lastVisionTimestamp = last;
+        /* The RobotPoseEstimator will ask the camera for all found targets and come up with
+        a Pose3d for the robot based on the discovered AprilTags. Feed this into the odometry's
+        pose estimator */
+
+        robotPoseEstimator.update().ifPresent(p -> {
+            poseEstimator.addVisionMeasurement(p.getFirst().toPose2d(), p.getSecond());
         });
     }
 }

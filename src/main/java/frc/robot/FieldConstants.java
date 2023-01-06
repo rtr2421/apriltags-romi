@@ -1,10 +1,12 @@
 package frc.robot;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import edu.wpi.first.apriltag.AprilTag;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.util.Units;
@@ -14,5 +16,6 @@ public final class FieldConstants {
     public static final Map<Integer, AprilTag> tags = Stream.of(new AprilTag[] { 
         tag1
     }).collect(Collectors.toMap(data -> data.ID, data -> data));
+    public static final AprilTagFieldLayout layout = new AprilTagFieldLayout(List.of(tag1),Units.feetToMeters(54) , Units.feetToMeters(27));
 
 }
