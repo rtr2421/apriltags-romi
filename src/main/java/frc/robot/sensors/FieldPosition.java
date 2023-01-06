@@ -4,43 +4,47 @@
 
 package frc.robot.sensors;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.photonvision.PhotonCamera;
 import org.photonvision.RobotPoseEstimator;
 import org.photonvision.RobotPoseEstimator.PoseStrategy;
 
-import edu.wpi.first.math.ComputerVisionUtil;
 import edu.wpi.first.math.Pair;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import frc.robot.DriveConstants;
 import frc.robot.FieldConstants;
 import frc.robot.RobotConstants;
 
-/** Add your docs here. */
-public class Odometry {
+/**
+ * FieldPosition takes care of keeping track of where we are on the field, 
+ * both through traditional wheel encoder measurement and by pose estimation
+ * from the camera seeing apriltags in known places)
+ * 
+ * All of this input is fed into a `DifferentialDrivePoseEstimator` which we must tune
+ * to weigh the "believability" of the different inputs.
+ **/
+public class FieldPosition {
 
-    RobotPoseEstimator robotPoseEstimator;
 
-    public DifferentialDrivePoseEstimator poseEstimator;
-    public Pose2d pose;
-    public final Field2d field = new Field2d();
-    public double lastVisionTimestamp = 0;
+    // This is the one that takes encoder + vision and feeds through a Kalman filter
+    private DifferentialDrivePoseEstimator poseEstimator;
+    // This one is just estimating the pose based on vision
+    private RobotPoseEstimator robotPoseEstimator;
+    private Pose2d pose;
+    private final Field2d field = new Field2d();
+    private double lastVisionTimestamp = 0;
 
-    public Odometry(PhotonCamera camera) {
+    public FieldPosition(PhotonCamera camera) {
 
-        robotPoseEstimator = new RobotPoseEstimator(FieldConstants.layout, PoseStrategy.AVERAGE_BEST_TARGETS, List.of(Pair.of(camera, RobotConstants.RobotToCamera)));
+        robotPoseEstimator = new RobotPoseEstimator(FieldConstants.layout, PoseStrategy.AVERAGE_BEST_TARGETS,
+                List.of(Pair.of(camera, RobotConstants.RobotToCamera)));
         poseEstimator = new DifferentialDrivePoseEstimator(
                 DriveConstants.kDriveKinematics,
                 new Rotation2d(),
@@ -51,12 +55,11 @@ public class Odometry {
 
         field.setRobotPose(new Pose2d());
         SmartDashboard.putData(field);
-        Map<Integer, Pose3d> apriltags = new HashMap<>();
-        apriltags.put(1, FieldConstants.tag1.pose);
     }
 
     /**
      * Reset the robot pose to something we know
+     * 
      * @param pose the pose
      */
     public void setRobotPose(Pose2d pose) {
@@ -65,15 +68,17 @@ public class Odometry {
 
     /**
      * Returns the current pose of the robot
+     * 
      * @return
      */
     public Pose2d getRobotPose() {
         return pose;
     }
+
     /**
      * 
-     * @param rotation - the current gyro heading
-     * @param leftDistance - the distance in meters of the left encoder
+     * @param rotation      - the current gyro heading
+     * @param leftDistance  - the distance in meters of the left encoder
      * @param rightDistance - the distance in meters of the right encoder
      */
     public void updateOdometry(Rotation2d rotation, Double leftDistance, Double rightDistance) {
@@ -94,9 +99,13 @@ public class Odometry {
             return; // nothing new for us
         }
         lastVisionTimestamp = last;
-        /* The RobotPoseEstimator will ask the camera for all found targets and come up with
-        a Pose3d for the robot based on the discovered AprilTags. Feed this into the odometry's
-        pose estimator */
+        /*
+         * The RobotPoseEstimator will ask the camera for all found targets and come up
+         * with
+         * a Pose3d for the robot based on the discovered AprilTags. Feed this into the
+         * odometry's
+         * pose estimator
+         */
 
         robotPoseEstimator.update().ifPresent(p -> {
             poseEstimator.addVisionMeasurement(p.getFirst().toPose2d(), p.getSecond());

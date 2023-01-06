@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.DriveConstants;
 import frc.robot.RobotConstants;
 import frc.robot.sensors.Camera;
-import frc.robot.sensors.Odometry;
+import frc.robot.sensors.FieldPosition;
 import frc.robot.sensors.RomiGyro;
 
 public class DriveTrain extends SubsystemBase {
@@ -38,10 +38,10 @@ public class DriveTrain extends SubsystemBase {
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
 
   private Camera camera;
-  private Odometry odometry;
+  private FieldPosition odometry;
 
   /** Creates a new Drivetrain. */
-  public DriveTrain(Camera camera, Odometry odometry) {
+  public DriveTrain(Camera camera, FieldPosition odometry) {
     this.camera = camera; // save the camera for later
     this.odometry = odometry;
     // We need to invert one side of the drivetrain so that positive voltages

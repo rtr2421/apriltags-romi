@@ -14,6 +14,12 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.RobotConstants;
 
+/**
+ * Represents the camera on the bot, specifically the front facing one
+ * This camera is intended for the odometry system to ask for a vision
+ * based pose, and for the targeting system to help with bearing/range
+ * to a particular target
+ */
 public class Camera extends SubsystemBase {
     private PhotonCamera camera = new PhotonCamera(RobotConstants.APRILTAG_CAMERA);
     private PhotonPipelineResult result;
@@ -32,16 +38,6 @@ public class Camera extends SubsystemBase {
      */
     public boolean hasTargets() {
         return result != null && result.hasTargets();
-    }
-
-    public List<PhotonTrackedTarget> getTargets() {
-
-        if (hasTargets()) {
-            var targets = result.getTargets();
-            return targets;
-        } else {
-            return Collections.emptyList();
-        }
     }
 
     /**

@@ -14,7 +14,7 @@ import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.ArcadeDrive;
 import frc.robot.sensors.Camera;
-import frc.robot.sensors.Odometry;
+import frc.robot.sensors.FieldPosition;
 import frc.robot.subsystems.DriveTrain;
 import frc.robot.subsystems.OnBoardIO;
 import frc.robot.subsystems.OnBoardIO.ChannelMode;
@@ -28,7 +28,7 @@ import frc.robot.subsystems.OnBoardIO.ChannelMode;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Camera camera = new Camera();
-  private final Odometry odometry = new Odometry(camera.getPhotonCamera());
+  private final FieldPosition odometry = new FieldPosition(camera.getPhotonCamera());
   private final DriveTrain m_drivetrain = new DriveTrain(camera, odometry);
   private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.INPUT, ChannelMode.INPUT);
 

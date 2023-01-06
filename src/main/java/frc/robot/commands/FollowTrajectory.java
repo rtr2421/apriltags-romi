@@ -15,7 +15,7 @@ import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
 import frc.robot.RobotConstants;
-import frc.robot.sensors.Odometry;
+import frc.robot.sensors.FieldPosition;
 import frc.robot.subsystems.DriveTrain;
 
 public class FollowTrajectory extends CommandBase {
@@ -27,10 +27,10 @@ public class FollowTrajectory extends CommandBase {
   Trajectory trajectory;
 
   DriveTrain driveTrain;
-  Odometry odometry;
+  FieldPosition odometry;
   Timer time = new Timer();
 
-  public FollowTrajectory(DriveTrain d, Odometry o, Trajectory t) {
+  public FollowTrajectory(DriveTrain d, FieldPosition o, Trajectory t) {
     // Use addRequirements() here to declare subsystem dependencies.
     addRequirements(d);
     driveTrain = d;
