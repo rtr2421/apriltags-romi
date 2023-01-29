@@ -16,7 +16,6 @@ import frc.robot.RobotConstants;
 import frc.robot.sensors.Camera;
 import frc.robot.sensors.FieldPosition;
 import frc.robot.sensors.RomiGyro;
-
 public class DriveTrain extends SubsystemBase {
   // The Romi has the left and right motors set to
   // PWM channels 0 and 1 respectively
@@ -38,12 +37,12 @@ public class DriveTrain extends SubsystemBase {
   private final BuiltInAccelerometer m_accelerometer = new BuiltInAccelerometer();
 
   private Camera camera;
-  private FieldPosition odometry;
+  private FieldPosition fieldPosition;
 
   /** Creates a new Drivetrain. */
-  public DriveTrain(Camera camera, FieldPosition odometry) {
+  public DriveTrain(Camera camera, FieldPosition fieldPosition) {
     this.camera = camera; // save the camera for later
-    this.odometry = odometry;
+    this.fieldPosition = fieldPosition;
     // We need to invert one side of the drivetrain so that positive voltages
     // result in both sides moving forward. Depending on how your robot's
     // gearbox is constructed, you might have to invert the left side instead.
@@ -143,8 +142,8 @@ public class DriveTrain extends SubsystemBase {
 
   @Override
   public void periodic() {
-    odometry.updateOdometry(getAngle(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
-    odometry.updatePoseEstimateFromCamera(camera);
+    fieldPosition.updateOdometry(getAngle(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+    //fieldPosition.updatePoseEstimateFromCamera(camera);
   }
 
   /** For auto - drives the controllers at a given voltage */

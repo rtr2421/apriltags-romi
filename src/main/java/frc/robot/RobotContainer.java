@@ -4,15 +4,27 @@
 
 package frc.robot;
 
+import java.util.List;
+
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.trajectory.Trajectory;
+import edu.wpi.first.math.trajectory.TrajectoryConfig;
+import edu.wpi.first.math.trajectory.TrajectoryGenerator;
+import edu.wpi.first.math.trajectory.constraint.DifferentialDriveVoltageConstraint;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.commands.ArcadeDrive;
+import frc.robot.commands.FollowTrajectory;
 import frc.robot.sensors.Camera;
 import frc.robot.sensors.FieldPosition;
 import frc.robot.subsystems.DriveTrain;
@@ -28,8 +40,8 @@ import frc.robot.subsystems.OnBoardIO.ChannelMode;
 public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   private final Camera camera = new Camera();
-  private final FieldPosition odometry = new FieldPosition(camera.getPhotonCamera());
-  private final DriveTrain m_drivetrain = new DriveTrain(camera, odometry);
+  private final FieldPosition fieldPosition = new FieldPosition(camera.getPhotonCamera());
+  private final DriveTrain driveTrain = new DriveTrain(camera, fieldPosition);
   private final OnBoardIO m_onboardIO = new OnBoardIO(ChannelMode.INPUT, ChannelMode.INPUT);
 
   // Assumes a gamepad plugged into channnel 0
@@ -53,7 +65,7 @@ public class RobotContainer {
   private void configureButtonBindings() {
     // Default command is arcade drive. This will run unless another command
     // is scheduled over it.
-    m_drivetrain.setDefaultCommand(getArcadeDriveCommand());
+    driveTrain.setDefaultCommand(getArcadeDriveCommand());
 
     // Example of how to use the onboard IO
     Trigger onboardButtonA = new Trigger(m_onboardIO::getButtonAPressed);
@@ -74,7 +86,63 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    return m_chooser.getSelected();
+    // return m_chooser.getSelected();
+           // Create a voltage constraint to ensure we don't accelerate too fast
+           var autoVoltageConstraint =
+           new DifferentialDriveVoltageConstraint(
+               new SimpleMotorFeedforward(
+                   DriveConstants.ksVolts,
+                   DriveConstants.kvVoltSecondsPerMeter,
+                   DriveConstants.kaVoltSecondsSquaredPerMeter),
+               DriveConstants.kDriveKinematics,
+               10);
+   
+       // Create config for trajectory
+       TrajectoryConfig config =
+           new TrajectoryConfig(DriveConstants.maxVelocityMetersPerSecond, 0.3)
+               // Add kinematics to ensure max speed is actually obeyed
+               .setKinematics(DriveConstants.kDriveKinematics)
+               // Apply the voltage constraint
+               .addConstraint(autoVoltageConstraint);
+   
+       Trajectory straight =
+           TrajectoryGenerator.generateTrajectory(
+               new Pose2d(0, 0, new Rotation2d(0)),
+               List.of(new Translation2d(0.5, 0)),
+               new Pose2d(1.5, 0, new Rotation2d(0)),
+               // Pass config
+               config);
+       Trajectory goThere =
+           TrajectoryGenerator.generateTrajectory(
+               // Start at the origin facing the +X direction
+               new Pose2d(0, 0, new Rotation2d(0)),
+               // Pass through these two interior waypoints, making an 's' curve path
+               List.of(new Translation2d(0.5, -0.5), new Translation2d(1, 0.5)),
+               //List.of(new Translation2d(0.2, 0.0)),
+               // End 3 meters straight ahead of where we started, facing forward
+               //new Pose2d(3, 0, new Rotation2d(0)),
+               new Pose2d(1.5, 0, new Rotation2d(0)),
+               // Pass config
+               config);
+       Trajectory comeBack =
+           TrajectoryGenerator.generateTrajectory(
+               // Start at the origin facing the +X direction
+               new Pose2d(0, 0, new Rotation2d(0)),
+               // Pass through these two interior waypoints, making an 's' curve path
+               List.of(new Translation2d(1, -0.5), new Translation2d(2, 0.5)),
+               //List.of(new Translation2d(0.2, 0.0)),
+               // End 3 meters straight ahead of where we started, facing forward
+               //new Pose2d(3, 0, new Rotation2d(0)),
+               new Pose2d(3, 0, new Rotation2d(0)),
+               // Pass config
+               config.setReversed(true));
+   
+       // Reset odometry to the starting pose of the trajectory.
+       return new InstantCommand(() -> fieldPosition.setRobotPose(straight.getInitialPose())).
+         andThen(new FollowTrajectory(driveTrain, fieldPosition, straight)).
+       // andThen(new FollowTrajectory(driveTrain, comeBack)).
+         andThen(new PrintCommand("Done!!!")).
+         andThen(() -> driveTrain.tankDriveVolts(0, 0));
   }
 
   /**
@@ -84,6 +152,6 @@ public class RobotContainer {
    */
   public Command getArcadeDriveCommand() {
     return new ArcadeDrive(
-        m_drivetrain, () -> -m_controller.getRawAxis(1), () -> -m_controller.getRawAxis(2));
+        driveTrain, () -> -m_controller.getRawAxis(1), () -> -m_controller.getRawAxis(2));
   }
 }

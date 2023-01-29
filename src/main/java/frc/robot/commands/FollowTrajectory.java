@@ -10,7 +10,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.DifferentialDriveWheelSpeeds;
 import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.trajectory.Trajectory.State;
-import edu.wpi.first.util.sendable.SendableBuilder;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandBase;
@@ -48,7 +47,16 @@ public class FollowTrajectory extends CommandBase {
     time.start();
   }
 
-  // Called every time the scheduler runs while the command is scheduled.
+  /**
+   * Called every time the scheduler runs while the command is scheduled.
+   * Fundamentally, we're going to take a Trajectory, which is a set of points and velocities,
+   * and then for every time slice answer:
+   * 1. Where should we be? (sample Trajectory)
+   * 2. Where are we now? (ask FieldPosition)
+   * 3. What should I do to get there? (difference between the two)
+   * 4. What voltage should I send to the motors? (PD)
+   **/
+
   @Override
   public void execute() {
     // What state should we be at, at this point in the trajectory?
